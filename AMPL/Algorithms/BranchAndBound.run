@@ -5,7 +5,7 @@ reset;
 option solver cplex;
 option solver_msg 0;
 # leggi modello e i dati
-model ../Models/modelloB.mod;
+model ../Models/BranchAndBoundModel.mod;
 data ../Data/dataTSP.dat;
 
 # Stampa a video la funzione obiettivo

@@ -5,7 +5,7 @@ reset;
 option solver cplex;
 option solver_msg 0;
 # leggi modello e i dati
-model ../Models/modello.mod;
+model ../Models/ConstraintsGenerationModel.mod;
 data ../Data/dataTSP.dat;
 
 # Impongo la variabile numerocicli uguale a zero
