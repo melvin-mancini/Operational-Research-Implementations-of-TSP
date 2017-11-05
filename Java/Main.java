@@ -32,7 +32,7 @@ public class Main {
             System.out.println("Inserisci il numero di nodi presenti nel grafo: ");
             scanner = new Scanner(System.in);
             numeroNodi = scanner.nextInt();
-            System.out.println("Scegli l'algoritmo che vuoi applicare: \n 1- Nearest Neighbour \n" +
+            System.out.println("\nScegli l'algoritmo che vuoi applicare: \n 1- Nearest Neighbour \n" +
                                        " 2- Ripetitive Nearest Neighbour");
             scanner = new Scanner(System.in);
             metodo = scanner.nextInt();
