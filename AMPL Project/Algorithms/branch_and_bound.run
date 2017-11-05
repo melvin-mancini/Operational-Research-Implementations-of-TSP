@@ -1,0 +1,25 @@
+# algoritmo.run
+# Usare il solve di tipo cplex e non stampare
+# i messaggi del solutore numerico
+reset;
+option solver cplex;
+option solver_msg 0;
+# leggi modello e i dati
+model ../Models/modelloB.mod;
+data ../Data/dataTSP.dat;
+
+# Stampa a video la funzione obiettivo
+expand costociclo;
+# Stampa a video dei vincoli di grado
+expand successore;
+expand predecessore;
+# Richiamo il metodo risolutivo di AMPL per ricavare 
+# la soluzione del problema
+solve;
+# Stampa a video della solzuione trovata
+display x;
+# Stampa a video del valore della rispettiva funzione
+# obiettivo
+display costociclo;
+
+

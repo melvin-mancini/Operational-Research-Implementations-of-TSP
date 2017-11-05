@@ -1,0 +1,174 @@
+# algoritmo.run
+# Usare il solve di tipo cplex e non stampare
+# i messaggi del solutore numerico
+reset;
+option solver cplex;
+option solver_msg 0;
+# leggi modello e i dati
+model ../Models/modello.mod;
+data ../Data/dataTSP.dat;
+
+# Impongo la variabile numerocicli uguale a zero
+# in modo tale che all'inizio il problema viene
+# risolto senza vincoli di eliminazione dei sotto-cicli.
+let numerocicli := 0;
+
+# Strutture dati per la determinazione dei cicli
+param nodosuccessore{V} >= 0, integer;
+param nodocorrente >= 0, integer;
+
+# Parametro che tiene conto delle iterazioni effettuate
+param numeroIterazione, integer;
+ 
+# Parmanetro che ci permette di uscire dallo script
+param termination binary;
+
+# Le seguenti variabili sono degli indici che ci 
+# permettono di indirizzare i sotto-cicli individuati 
+# alle varie iterazioni.
+param indice_cicli_precedenti;
+param nuovi_cicli;
+
+# Variabile che permette di definire se bisogna 
+# aggiungere il sotto-ciclo indivduato all'insieme 
+#dei sotto-cicli (ciclo).
+param aggiungi_ciclo;
+
+# Insieme i cui elementi sono nodi corrispondenti 
+#ad un sotto-ciclo individuato
+set candidato;
+# Insieme i cui elementi sono i nodi 
+#corrispondenti alla soluzione ottima.
+set cicloHamiltoniano;
+
+# Impongo la variabile termination uguale a 0
+let termination := 0;
+# Impongo il numero delle iterazioni a zero.
+let numeroIterazione := 0;
+
+# Algoritmo: risolvi il modello senza vincoli
+# di rottura dei sottocicli, trova un sottociclo,
+# aggiungi il vincolo corrispondente, e quando
+# non esistono sottocicli propri, esci. 
+# Il ciclo finale determinato equivale alla 
+# soluzione del problema. 
+repeat while (termination = 0) {
+	let numeroIterazione := numeroIterazione +1;
+	printf "\n";
+	printf "Iterazione numero %d", numeroIterazione;
+	printf "\n";
+	printf "La funzione obiettivo:\n";
+	expand costociclo;
+	printf "\nVincoli di grado:\n";
+	expand successore;
+	expand predecessore;
+	printf "Vincoli di eliminazione dei sottocicli:\n"; 
+	expand nocicli;
+	
+	# Soluzione del problema generato
+	# Alla prima iterazione, non ci saranno vincoli
+	# di eliminazione di sottocicli
+	solve;
+
+	# Salvataggio dell'indice dell'ultimo sottociclo 
+	# inserito all'iterazione precedente
+	let indice_cicli_precedenti := numerocicli;
+	
+	# Inizializzazione del contatore di nuovi cicli
+	# individuati
+	let nuovi_cicli := 0;
+	
+	# Per ogni nodo, cerco il successore all'interno
+	# dei percorsi (cicli) determinati dalla soluzione
+	for {i in V} {
+		let nodosuccessore[i] := sum{j in V : j != i} j * x[i,j];
+	}
+	
+	# Ricerca di sottocicli.
+	# Per ogni nodo determino il suo successore.
+	# Attraverso un opportuno loop riusciamo a 
+	# determinare i vari sotto-cicli (memorizzati 
+	# di volta in volta nel parametro candidato) 
+	# e successivamente si valuta se bisogna aggiungerlo
+	# o meno ai sotto-cicli determinati precedentemente.
+	for {i in V} {
+		let nodocorrente := i;
+		let candidato := {};
+
+		# Partendo da un nodo, determina l'eventuale 
+		# percorso per tornare a se stesso. 
+		# Metodo per determinare i sottocicli (o il 
+		# ciclo Hamiltoniano)
+		repeat {
+			let candidato := candidato union {nodocorrente};
+			let nodocorrente := nodosuccessore[nodocorrente];
+		} until (nodocorrente = i);
+		
+		# Aggiunta del nuovo percorso all'insieme dei 
+		# sottocicli evitando percorsi duplicati. In questo
+		# modo evitiamo di aggiungere successivamenti 
+		# vincoli di eliminazione di sotto-cicli ridondanti.
+		let aggiungi_ciclo := 1;
+		for {d in 1..numerocicli} {
+			# Se, tra i sottocicli determinati precedentemente 
+			# della stessa cardinalita' del nuovo ciclo 
+			# determinato, la differenza degli elementi
+			# e' un insieme vuoto, allora i due percorsi 
+			# sono uguali.
+			# Due percorsi uguali andrebbero a creare vincoli
+			# duplicati e non vanno inseriti.
+			if(card(ciclo[d]) = card(candidato) and 
+				card(ciclo[d] diff candidato) = 0) then 
+			{
+				let aggiungi_ciclo := 0;
+			} 
+		}
+		
+		# Aggiungo il ciclo appena trovato (nel caso in cui 
+		# non era presente nelle iterazioni precedenti). 
+		# Aggiungendo un ciclo si procedera' a risolvere il
+		# problema con un vincolo in piu'.
+		if (aggiungi_ciclo = 1) then {
+			# Aumento il numero dei cicli, espandendo di
+			# conseguenza l'insieme dei sottocicli
+			let numerocicli := numerocicli + 1;
+			# Assegno il ciclo appena trovato in fondo 
+			# all'insieme di sottocicli
+			let ciclo[numerocicli] := candidato; 
+			# Incremento il contatore dei cicli trovati in 
+			#riferimento a questa iterazione
+			let nuovi_cicli := nuovi_cicli + 1;
+		}
+	}
+	
+	printf "\n\nLa soluzione determinata: \n";
+	display x;
+	printf "I sottocicli individuati: \n";
+	for {i in (indice_cicli_precedenti + 1)..(indice_cicli_precedenti + nuovi_cicli)} {
+		display ciclo[i];
+		}
+	printf "Il valore della funzione obiettivo: %f ", costociclo;
+	printf "\n \n";
+	
+	# Verifica se si puo terminare.
+	# Se, tra i nuovi cicli determinati in questa iterazione, 
+	# esiste anche un solo percorso che tocca un numero di nodi
+	# uguale a n (numero totale di nodi) allora abbiamo 
+	# determinato una soluzione ottima. Altrimenti e' 
+	# necessario effettuare un'altra iterazione, poiche'
+	# la soluzione non e' ammissibile.
+	for {i in (indice_cicli_precedenti + 1)..(indice_cicli_precedenti + nuovi_cicli)} {
+		if(card(ciclo[i]) >= n) then {
+			let termination := 1;
+			let cicloHamiltoniano := ciclo[i];
+			break;
+		}	
+	}
+	
+}
+
+printf "\nLa soluzione finale determinata:\n";
+display x;
+printf "Il ciclo hamiltoniano minimo determinato:\n ";
+display cicloHamiltoniano;
+printf "\nIl costo del ciclo hamiltoniano minimo: %f\n", costociclo;
