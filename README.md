@@ -63,7 +63,7 @@ Inside the [Java folder](./Java) there are two files [Main.java](./Java/Main.jav
 * Repetetive Nearest Neighbor.
 These two methods are very similiar but in the first case you have to choose the initial node where you want start the algorithm. After your choice, then the program gives the solution. The operation of Repetetive Nearest Neighbor algorithm is the same of Nearest Neighbor, but instead to give back one solution (with the specific inital node), this technique returns as many solutions as many nodes. The method considers for each execution a different node as starting node. In according to the starting node, the program gives a different solution.
 To run the program you have to use a command line interface (Terminal for Mac OSX or cmd for Windows). After that you opened the console application, you must follow the steps:
-1. **browes the folder** and go in the **[Java folder](./Java)**
+1. **browse the folder** and go in the **[Java folder](./Java)**
 2. digit **javac Main.java**
 3. digit **java Main**.
 At this point the program will be in execution and you can follow the istructions for resolving a TSP with one of heuristic techniques.
